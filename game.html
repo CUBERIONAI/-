@@ -14,8 +14,8 @@ body {
     font-family: 'Orbitron', sans-serif; 
     overflow: hidden; 
     user-select: none; 
-    /* Фон самої гри */
-    background: url('https://raw.githubusercontent.com/CUBERIONAI/Matisov-X/main/game-background.png') no-repeat center center; 
+    /* Додано базовий темний колір, щоб не було білих спалахів */
+    background: #050505 url('https://raw.githubusercontent.com/CUBERIONAI/Matisov-X/main/game-background.png') no-repeat center center; 
     background-size: cover;
     color: white;
 }
@@ -23,28 +23,32 @@ body {
 .samurai-box {
     position: relative;
     width: 100%;
-    height: 45vh;
+    height: 50vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* нічого зайвого */
-    background: none; /* прозорий контейнер */
+    overflow: hidden;
+    /* ВИПРАВЛЕНО: Радіальний градієнт прибирає візуальну сітку і створює глибину */
+    background: radial-gradient(circle, rgba(0, 210, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    border-radius: 50%;
 }
 
 #samurai {
     display: block;
-    max-height: 100%;
+    max-height: 90%;
     z-index: 2;
-    transition: transform 0.1s ease;
+    transition: transform 0.05s ease-out;
+    /* Покращено рендеринг зображення */
+    filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.3));
 }
 
 .mx-popup {
     position: absolute; color: #00d2ff; font-weight: 900; font-size: 32px;
-    pointer-events: none; animation: floatUp 0.7s forwards; z-index: 100;
-    text-shadow: 0 0 10px #00d2ff;
+    pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 100;
+    text-shadow: 0 0 12px #00d2ff;
 }
 
-@keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-150px); opacity: 0; } }
+@keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-120px) scale(1.2); opacity: 0; } }
 
 .energy-bar { height: 12px; background: #111; border-radius: 6px; border: 1px solid #222; overflow: hidden; }
 .energy-fill { height: 100%; background: linear-gradient(90deg, #00d2ff, #0055ff); transition: width 0.2s; box-shadow: 0 0 15px #00d2ff; }
@@ -56,7 +60,7 @@ body {
 </head>
 <body class="flex flex-col h-screen p-4">
 
-<audio id="sfx-hit" src="https://assets.mixkit.co/active_storage/sfx/1077/1077-preview.mp3"></audio>
+<audio id="sfx-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
 
 <header class="flex justify-between items-start mb-4">
 <div>
@@ -73,7 +77,7 @@ body {
 </header>
 
 <main class="flex-1">
-<section id="game-screen" class="screen active-screen">
+<section id="game-screen" class="screen active-screen flex flex-col justify-center">
 <div class="samurai-box" id="tap-target">
     <img id="samurai" src="https://raw.githubusercontent.com/CUBERIONAI/Matisov-X/main/1770305168681.png" alt="Samurai">
 </div>
@@ -115,7 +119,6 @@ let balance = parseInt(localStorage.getItem('mx_bal')) || 0;
 let energy = 1000;
 let tapPower = 1;
 
-// --- Кадрова анімація героя ---
 const samuraiFrames = [
 "https://raw.githubusercontent.com/CUBERIONAI/Matisov-X/main/1770305168681.png",
 "https://raw.githubusercontent.com/CUBERIONAI/Matisov-X/main/1770305191748.png",
@@ -134,18 +137,17 @@ tapTarget.addEventListener('touchstart', (e) => {
         balance += tapPower;
         energy -= tapPower;
 
-        // Зміна кадру героя
         frameIndex = (frameIndex + 1) % samuraiFrames.length;
         samurai.src = samuraiFrames[frameIndex];
-        samurai.style.transform = "scale(1.1)";
-        setTimeout(() => samurai.style.transform = "scale(1)", 100);
+        samurai.style.transform = "scale(1.05)";
+        setTimeout(() => samurai.style.transform = "scale(1)", 50);
 
-        // Звук і попап
         sfxHit.currentTime = 0;
+        sfxHit.volume = 0.5; // Робимо звук трохи м'якшим
         sfxHit.play();
         showPopup(touch.clientX, touch.clientY);
 
-        if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         updateUI();
         save();
     }
@@ -157,7 +159,7 @@ function showPopup(x, y) {
     p.style.left = x + 'px'; p.style.top = y + 'px';
     p.innerText = `+${tapPower}`;
     document.body.appendChild(p);
-    setTimeout(() => p.remove(), 700);
+    setTimeout(() => p.remove(), 600);
 }
 
 function updateUI() {
@@ -169,7 +171,6 @@ function updateUI() {
     else if(balance >= 1000000) rank.innerText = "Stage 2 (Samurai)";
 }
 
-// --- Завдання ---
 const missions = [
     { n: "TG Channel", r: 1000000, l: "https://t.me/Matisov_X" },
     { n: "TG Chat", r: 1000000, l: "https://t.me/MatisovX" },
@@ -180,6 +181,7 @@ const missions = [
 
 function initTasks() {
     const list = document.getElementById('task-list');
+    list.innerHTML = "";
     missions.forEach(m => {
         list.innerHTML += `
         <div class="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-gray-800">
@@ -199,7 +201,6 @@ function doTask(url, reward) {
     }, 3000);
 }
 
-// --- Навігація ---
 function nav(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -212,7 +213,6 @@ function save() {
     localStorage.setItem('mx_time', Date.now()); 
 }
 
-// Офлайн дохід
 function checkOffline() {
     const last = localStorage.getItem('mx_time');
     if(last) {
@@ -237,4 +237,4 @@ checkOffline();
 updateUI();
 </script>
 </body>
-</html>г
+</html>
